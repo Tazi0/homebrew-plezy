@@ -116,13 +116,13 @@ brew install --cask plezy
 
 ```bash
 # Validate syntax
-brew cask audit --strict Casks/plezy.rb
+brew audit --strict --cask Casks/plezy.rb
 
 # Test installation
-brew install --cask Casks/plezy.rb --verbose
+brew install --cask Casks/plezy.rb --dry-run
 
 # Check style
-brew cask style Casks/plezy.rb
+brew style Casks/plezy.rb
 ```
 
 ### Local Development

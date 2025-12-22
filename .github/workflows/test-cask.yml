@@ -2,9 +2,9 @@ name: Test Cask
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -21,17 +21,17 @@ jobs:
       - name: Validate cask syntax
         run: |
           echo "Validating cask syntax..."
-          brew cask audit --strict Casks/plezy.rb
+          brew audit --strict --cask Casks/plezy.rb
 
       - name: Check cask style
         run: |
           echo "Checking cask style..."
-          brew cask style Casks/plezy.rb
+          brew style Casks/plezy.rb
 
       - name: Test cask installation (dry run)
         run: |
           echo "Testing cask installation (dry run)..."
-          brew install --cask Casks/plezy.rb --verbose --dry-run
+          brew install --cask Casks/plezy.rb --dry-run
 
       - name: Verify download URL
         run: |
@@ -134,7 +134,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.0'
+          ruby-version: "3.0"
 
       - name: Install basic Ruby dependencies
         run: |
