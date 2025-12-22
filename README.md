@@ -7,14 +7,14 @@ A Homebrew tap for [Plezy](https://github.com/edde746/plezy) - A modern Plex cli
 ### Add the tap and install Plezy
 
 ```bash
-brew tap YOUR_USERNAME/plezy
+brew tap Tazi0/plezy
 brew install --cask plezy
 ```
 
 ### Install directly (without adding tap)
 
 ```bash
-brew install --cask YOUR_USERNAME/plezy/plezy
+brew install --cask Tazi0/plezy/plezy
 ```
 
 ## What is Plezy?
@@ -30,28 +30,33 @@ Plezy is a modern Plex client built with Flutter that provides:
 ## Supported Platforms
 
 This tap provides:
+
 - **macOS**: Universal app bundle (Intel and Apple Silicon)
 
 ## Usage
 
 ### Install Plezy
+
 ```bash
 brew install --cask plezy
 ```
 
 ### Update Plezy
+
 ```bash
 brew upgrade --cask plezy
 ```
 
 ### Uninstall Plezy
+
 ```bash
 brew uninstall --cask plezy
 ```
 
 ### Remove this tap
+
 ```bash
-brew untap YOUR_USERNAME/plezy
+brew untap Tazi0/plezy
 ```
 
 ## Automatic Updates
@@ -70,6 +75,7 @@ If you want to force an update or contribute:
 ## Verification
 
 Each release is verified with:
+
 - SHA256 checksum validation
 - App bundle structure verification
 - Download URL accessibility testing
@@ -80,16 +86,19 @@ Each release is verified with:
 ### Installation Issues
 
 **Permission denied**
+
 ```bash
 sudo chown -R $(whoami) /opt/homebrew/Caskroom/
 ```
 
 **App won't open (macOS Gatekeeper)**
+
 ```bash
 xattr -cr /Applications/plezy.app
 ```
 
 **Cask conflicts**
+
 ```bash
 brew uninstall --cask plezy
 brew install --cask plezy
@@ -119,7 +128,7 @@ brew cask style Casks/plezy.rb
 ### Local Development
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/homebrew-plezy.git
+git clone https://github.com/Tazi0/homebrew-plezy.git
 cd homebrew-plezy
 
 # Test cask

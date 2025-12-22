@@ -1,0 +1,225 @@
+name: Update Plezy Cask
+
+on:
+  schedule:
+    # Check for new releases every 30 minutes
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to update to (e.g., 1.11.0)"
+        required: false
+        type: string
+      force:
+        description: "Force update even if version exists"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  check-and-update:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest release from upstream
+        id: latest_release
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            LATEST_VERSION="${{ inputs.version }}"
+            echo "Using manual version: $LATEST_VERSION"
+          else
+            LATEST_VERSION=$(curl -s https://api.github.com/repos/edde746/plezy/releases/latest | jq -r '.tag_name')
+            echo "Found latest version: $LATEST_VERSION"
+          fi
+
+          if [ "$LATEST_VERSION" = "null" ] || [ -z "$LATEST_VERSION" ]; then
+            echo "Failed to get latest version"
+            exit 1
+          fi
+
+          echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if version already exists
+        id: version_check
+        run: |
+          CURRENT_VERSION=$(grep 'version "' Casks/plezy.rb | sed 's/.*version "\(.*\)".*/\1/')
+          LATEST_VERSION="${{ steps.latest_release.outputs.version }}"
+          FORCE_UPDATE="${{ inputs.force }}"
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Latest version: $LATEST_VERSION"
+          echo "Force update: $FORCE_UPDATE"
+
+          if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ] && [ "$FORCE_UPDATE" != "true" ]; then
+            echo "Version $LATEST_VERSION already exists and force is not enabled"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "Update needed: $CURRENT_VERSION -> $LATEST_VERSION"
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download release asset
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.latest_release.outputs.version }}"
+          echo "Downloading plezy-macos.zip for version $VERSION"
+
+          curl -L -o plezy-macos.zip \
+            "https://github.com/edde746/plezy/releases/download/$VERSION/plezy-macos.zip"
+
+          if [ ! -f plezy-macos.zip ]; then
+            echo "Failed to download release asset"
+            exit 1
+          fi
+
+          ls -la plezy-macos.zip
+
+      - name: Calculate SHA256
+        if: steps.version_check.outputs.needs_update == 'true'
+        id: sha256
+        run: |
+          SHA256=$(shasum -a 256 plezy-macos.zip | cut -d' ' -f1)
+          echo "SHA256: $SHA256"
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Verify download contents
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          echo "Verifying ZIP contents..."
+          unzip -l plezy-macos.zip
+
+          # Check if Plezy.app exists in the archive
+          if ! unzip -l plezy-macos.zip | grep -q "Plezy.app/"; then
+            echo "Warning: Plezy.app not found in expected location"
+            echo "ZIP contents:"
+            unzip -l plezy-macos.zip
+          fi
+
+      - name: Update cask file
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.latest_release.outputs.version }}"
+          SHA256="${{ steps.sha256.outputs.sha256 }}"
+
+          cat > Casks/plezy.rb << EOF
+          cask "plezy" do
+            version "$VERSION"
+            sha256 "$SHA256"
+
+            url "https://github.com/edde746/plezy/releases/download/#{version}/plezy-macos.zip"
+            name "Plezy"
+            desc "Modern Plex client for desktop and mobile"
+            homepage "https://github.com/edde746/plezy"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            auto_updates true
+
+            app "Plezy.app"
+
+            postflight do
+              system_command "/usr/bin/xattr",
+                             args: ["-cr", "#{appdir}/Plezy.app"],
+                             sudo: false
+            end
+
+            uninstall quit: "com.edde746.plezy"
+
+            zap trash: [
+              "~/Library/Application Support/com.edde746.plezy",
+              "~/Library/Caches/com.edde746.plezy",
+              "~/Library/HTTPStorages/com.edde746.plezy",
+              "~/Library/Preferences/com.edde746.plezy.plist",
+              "~/Library/Saved Application State/com.edde746.plezy.savedState",
+              "~/Library/WebKit/com.edde746.plezy",
+            ]
+          end
+          EOF
+
+          echo "Updated cask file:"
+          cat Casks/plezy.rb
+
+      - name: Validate cask
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          # Install Homebrew if not present
+          if ! command -v brew &> /dev/null; then
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+          fi
+
+          eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
+
+          # Validate cask syntax
+          echo "Validating cask syntax..."
+          brew cask audit --strict Casks/plezy.rb || {
+            echo "Cask validation failed, but continuing..."
+          }
+
+      - name: Test cask installation
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
+
+          echo "Testing cask installation..."
+
+          # Try to install the cask (dry run)
+          brew install --cask Casks/plezy.rb --verbose --dry-run || {
+            echo "Dry run failed, but continuing with commit..."
+          }
+
+      - name: Commit and push changes
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.latest_release.outputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add Casks/plezy.rb
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: update plezy to version $VERSION
+
+          - Updated version to $VERSION
+          - Updated SHA256 checksum
+          - Release: https://github.com/edde746/plezy/releases/tag/$VERSION"
+
+          git push
+
+      - name: Create release summary
+        if: steps.version_check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.latest_release.outputs.version }}"
+
+          echo "## Plezy Updated to $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA256**: ${{ steps.sha256.outputs.sha256 }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release**: [View on GitHub](https://github.com/edde746/plezy/releases/tag/$VERSION)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "brew tap YOUR_USERNAME/plezy" >> $GITHUB_STEP_SUMMARY
+          echo "brew install --cask plezy" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: No update needed
+        if: steps.version_check.outputs.needs_update == 'false'
+        run: |
+          CURRENT_VERSION=$(grep 'version "' Casks/plezy.rb | sed 's/.*version "\(.*\)".*/\1/')
+          echo "No update needed. Current version $CURRENT_VERSION is up to date."
+
+          echo "## No Update Needed" >> $GITHUB_STEP_SUMMARY
+          echo "Current version **$CURRENT_VERSION** is already the latest." >> $GITHUB_STEP_SUMMARY

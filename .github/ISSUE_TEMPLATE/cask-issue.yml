@@ -1,0 +1,118 @@
+name: Cask Issue
+description: Report a problem with the Plezy Homebrew cask
+title: "[Cask] "
+labels: ["bug", "cask"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue with the Plezy Homebrew cask!
+
+        **Note**: This repository only handles packaging issues. If you have problems with the Plezy app itself, please report them at the [main Plezy repository](https://github.com/edde746/plezy/issues).
+
+  - type: checkboxes
+    attributes:
+      label: Pre-flight checklist
+      options:
+        - label: I have searched for existing issues
+          required: true
+        - label: I am using the latest version of Homebrew
+          required: true
+        - label: I have tried `brew update` and `brew upgrade`
+          required: true
+
+  - type: dropdown
+    attributes:
+      label: Issue Type
+      description: What kind of problem are you experiencing?
+      options:
+        - Installation fails
+        - App won't launch after installation
+        - Update/upgrade issues
+        - Uninstall problems
+        - Cask validation errors
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Plezy Version
+      description: What version of Plezy are you trying to install?
+      placeholder: "e.g., 1.11.0"
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: System Information
+      description: Please provide your system details
+      value: |
+        - macOS version:
+        - Homebrew version:
+        - Architecture: (Intel/Apple Silicon)
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Command Used
+      description: What command did you run?
+      placeholder: |
+        e.g.,
+        brew tap YOUR_USERNAME/plezy
+        brew install --cask plezy
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Error Output
+      description: Please paste the full error message or output
+      placeholder: Copy and paste the complete terminal output here
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here
+      placeholder: |
+        - Any workarounds you've tried
+        - Links to relevant documentation
+        - Screenshots (if applicable)
+
+  - type: textarea
+    attributes:
+      label: Homebrew Configuration
+      description: Output of `brew config` and `brew doctor`
+      placeholder: |
+        Please run the following commands and paste the output:
+
+        ```bash
+        brew config
+        ```
+
+        ```bash
+        brew doctor
+        ```
+      render: text
