@@ -1,8 +1,8 @@
 cask "plezy" do
-  version "1.12.0"
-  sha256 "679f63c8e188a7c48c702f6f232acdd4b5cc9a208a17fc128601837a4fc23495"
+  version "1.13.0"
+  sha256 "147525c6e7776a8cc433f49b721d7a186d884d66f79c65a2cd859b0129409286"
 
-  url "https://github.com/edde746/plezy/releases/download/#{version}/plezy-macos.zip"
+  url "https://github.com/edde746/plezy/releases/download/#{version}/plezy-macos.dmg"
   name "Plezy"
   desc "Modern Plex client for desktop and mobile"
   homepage "https://github.com/edde746/plezy"
