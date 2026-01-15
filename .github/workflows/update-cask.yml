@@ -2,8 +2,8 @@ name: Update Plezy Cask
 
 on:
   schedule:
-    # Check for new releases every 30 minutes
-    - cron: "*/30 * * * *"
+    # Check for new releases every week
+    - cron: "0 0 * * 0"
   workflow_dispatch:
     inputs:
       version:
